@@ -11,6 +11,7 @@ import {
   updatePassword
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { createUserDocument } from '../firebase/userService';
 
 const AuthContext = createContext();
 
@@ -23,8 +24,19 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const signup = (email, password) => {
-    return createUserWithEmailAndPassword(auth, email, password);
+  const signup = async (email, password) => {
+    try {
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+      // Create the user document in Firestore
+      await createUserDocument(user.uid, {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      });
+      return { user };
+    } catch (error) {
+      throw error;
+    }
   };
 
   const login = (email, password) => {
@@ -35,9 +47,20 @@ export const AuthProvider = ({ children }) => {
     return signOut(auth);
   };
 
-  const googleSignIn = () => {
-    const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+  const googleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const { user } = await signInWithPopup(auth, provider);
+      // Create or update the user document for Google Sign In
+      await createUserDocument(user.uid, {
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL
+      });
+      return { user };
+    } catch (error) {
+      throw error;
+    }
   };
 
   const resetPassword = async (email) => {
@@ -100,4 +123,4 @@ export const AuthProvider = ({ children }) => {
       {!loading && children}
     </AuthContext.Provider>
   );
-}; 
+};

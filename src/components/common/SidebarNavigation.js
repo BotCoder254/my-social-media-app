@@ -10,7 +10,8 @@ import {
   FaBars,
   FaBell,
   FaEnvelope,
-  FaBookmark
+  FaBookmark,
+  FaPlus
 } from 'react-icons/fa';
 
 const SidebarNavigation = () => {
@@ -23,11 +24,11 @@ const SidebarNavigation = () => {
 
   const navItems = [
     { path: '/feed', icon: FaHome, label: 'Home' },
-    { path: '/messages', icon: FaEnvelope, label: 'Messages' },
-    { path: '/notifications', icon: FaBell, label: 'Notifications' },
+    // { path: '/messages', icon: FaEnvelope, label: 'Messages' },
+    // { path: '/notifications', icon: FaBell, label: 'Notifications' },
     { path: '/bookmarks', icon: FaBookmark, label: 'Bookmarks' },
     { path: '/profile', icon: FaUser, label: 'Profile' },
-    { path: '/settings', icon: FaCog, label: 'Settings' },
+    // { path: '/settings', icon: FaCog, label: 'Settings' },
   ];
 
   const handleLogout = async () => {
@@ -39,8 +40,9 @@ const SidebarNavigation = () => {
     }
   };
 
-  return (
-    <div className={`fixed top-0 left-0 h-full bg-white shadow-lg z-50 transition-all duration-300 ${
+  // Desktop Sidebar
+  const DesktopSidebar = () => (
+    <div className={`fixed top-0 left-0 h-full bg-white shadow-lg z-50 transition-all duration-300 hidden md:block ${
       isExpanded ? 'w-64' : 'w-20'
     }`}>
       {/* Header */}
@@ -99,10 +101,10 @@ const SidebarNavigation = () => {
         </div>
 
         {/* Logout Button */}
-        <div className="p-4 border-t border-gray-200">
+        <div className="p-4">
           <button
             onClick={handleLogout}
-            className="flex items-center space-x-3 w-full p-3 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            className="flex items-center space-x-3 w-full p-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <FaSignOutAlt className="text-xl" />
             {isExpanded && <span>Logout</span>}
@@ -111,6 +113,46 @@ const SidebarNavigation = () => {
       </div>
     </div>
   );
+
+  // Mobile Bottom Navigation
+  const MobileNavigation = () => (
+    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 md:hidden">
+      <div className="flex justify-around items-center h-16">
+        {navItems.slice(0, 5).map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex flex-col items-center justify-center flex-1 h-full ${
+              location.pathname === item.path
+                ? 'text-primary'
+                : 'text-gray-500 hover:text-primary'
+            }`}
+          >
+            <item.icon className="text-xl mb-1" />
+            <span className="text-xs">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Floating Create Post Button
+  const FloatingCreateButton = () => (
+    <Link
+      to="/create"
+      className="fixed right-4 bottom-20 md:right-8 md:bottom-8 bg-primary text-white p-4 rounded-full shadow-lg hover:bg-primary-dark transition-colors z-50"
+    >
+      <FaPlus className="text-xl" />
+    </Link>
+  );
+
+  return (
+    <>
+      <DesktopSidebar />
+      <MobileNavigation />
+      <FloatingCreateButton />
+    </>
+  );
 };
 
-export default SidebarNavigation; 
+export default SidebarNavigation;

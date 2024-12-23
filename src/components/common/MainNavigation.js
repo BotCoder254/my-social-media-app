@@ -28,7 +28,7 @@ const MainNavigation = () => {
 
   const navItems = [
     { path: '/feed', icon: FaHome, label: 'Home' },
-    { path: '/messages', icon: FaEnvelope, label: 'Messages' },
+    // { path: '/messages', icon: FaEnvelope, label: 'Messages' },
     { path: '/profile', icon: FaUser, label: 'Profile' },
   ];
 
@@ -85,8 +85,8 @@ const MainNavigation = () => {
               </Link>
             ))}
 
-            {/* Notifications */}
-            <div className="relative">
+            
+            {/* <div className="relative">
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
@@ -121,7 +121,7 @@ const MainNavigation = () => {
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
+            </div> */}
 
             {/* User Menu */}
             <div className="relative">
