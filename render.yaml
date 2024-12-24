@@ -3,10 +3,13 @@ services:
     name: social-media-app
     env: static
     buildCommand: npm install && npm run build
+    startCommand: npx serve -s build -l $PORT
     staticPublishPath: ./build
     envVars:
       - key: NODE_VERSION
         value: 18.0.0
+      - key: PORT
+        value: 10000
     headers:
       - path: /*
         name: Cache-Control
