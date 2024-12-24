@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useAuth, AuthProvider } from './contexts/AuthContext';
 import SignUp from './components/SignUp';
 import Login from './components/Login';
@@ -11,7 +11,32 @@ import SidebarNavigation from './components/common/SidebarNavigation';
 import Bookmarks from './components/Bookmarks';
 import Settings from './components/Settings';
 import CreatePost from './components/CreatePost';
+import { handleCreatePost } from './components/Home';
 import { SettingsProvider } from './contexts/SettingsContext';
+
+const CreatePostWrapper = () => {
+  const navigate = useNavigate();
+  const { currentUser } = useAuth();
+
+  return (
+    <PrivateRoute>
+      <Layout>
+        <div className="max-w-2xl mx-auto p-4">
+          <CreatePost 
+            onCreatePost={async (postData, media, mediaType, setUploadProgress) => {
+              try {
+                await handleCreatePost(postData, media, mediaType, setUploadProgress, currentUser);
+                navigate('/feed');
+              } catch (error) {
+                console.error('Error creating post:', error);
+              }
+            }} 
+          />
+        </div>
+      </Layout>
+    </PrivateRoute>
+  );
+};
 
 function App() {
   const { currentUser } = useAuth();
@@ -37,21 +62,7 @@ function App() {
                     </PrivateRoute>
                   }
                 />
-                <Route
-                  path="/create"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <div className="max-w-2xl mx-auto p-4">
-                          <CreatePost onCreatePost={(post) => {
-                            // After post creation, navigate to feed
-                            window.location.href = '/feed';
-                          }} />
-                        </div>
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
+                <Route path="/create" element={<CreatePostWrapper />} />
                 <Route
                   path="/profile/:userId?"
                   element={

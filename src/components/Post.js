@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { FaHeart, FaRegHeart, FaComment, FaShare, FaEllipsisV, FaFileAlt, FaBookmark, FaRegBookmark } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaComment, FaShare, FaEllipsisV, FaFileAlt, FaBookmark, FaRegBookmark, FaUserCircle } from 'react-icons/fa';
 
 import { formatDistanceToNow } from 'date-fns';
 
@@ -51,6 +51,19 @@ const Post = ({ post, onLike, onComment, onDelete, onEdit, onBookmark }) => {
   const hasLiked = post.likes?.includes(currentUser.uid);
 
   const isAuthor = post.authorId === currentUser.uid;
+
+
+
+  // Format the timestamp
+  const getFormattedTime = () => {
+    if (!post.createdAt) return 'Just now';
+    
+    const postDate = post.createdAt instanceof Date 
+      ? post.createdAt 
+      : post.createdAt.toDate();
+      
+    return formatDistanceToNow(postDate, { addSuffix: true });
+  };
 
 
 
@@ -582,33 +595,39 @@ const Post = ({ post, onLike, onComment, onDelete, onEdit, onBookmark }) => {
 
       {/* Post Header */}
 
-      <div className="p-4 flex items-center justify-between">
+      <div className="p-4 flex items-center justify-between mb-4">
 
         <div className="flex items-center space-x-3">
 
-          <Link to={`/profile/${post.authorId}`}>
+          <Link to={`/profile/${post.authorId}`} className="hover:opacity-80 transition-opacity">
 
-            <motion.img
+            {post.authorPhotoURL ? (
 
-              whileHover={{ scale: 1.1 }}
+              <img
 
-              src={post.authorPhotoURL || 'https://via.placeholder.com/40'}
+                src={post.authorPhotoURL}
 
-              alt={post.authorName}
+                alt={post.authorName}
 
-              className="w-10 h-10 rounded-full object-cover border-2 border-primary/20"
+                className="w-10 h-10 rounded-full object-cover"
 
-            />
+              />
+
+            ) : (
+
+              <FaUserCircle className="w-10 h-10 text-gray-500" />
+
+            )}
 
           </Link>
 
           <div>
 
-            <Link 
+            <Link
 
               to={`/profile/${post.authorId}`}
 
-              className="font-semibold text-gray-800 hover:text-primary transition-colors"
+              className="font-semibold text-gray-900 hover:underline"
 
             >
 
@@ -616,17 +635,7 @@ const Post = ({ post, onLike, onComment, onDelete, onEdit, onBookmark }) => {
 
             </Link>
 
-            <p className="text-sm text-gray-500">
-
-              {post.createdAt?.toDate ? 
-
-                formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })
-
-                : 'Just now'
-
-              }
-
-            </p>
+            <p className="text-sm text-gray-500">{getFormattedTime()}</p>
 
           </div>
 

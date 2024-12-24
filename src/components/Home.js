@@ -11,6 +11,71 @@ import { FaFilter, FaTimes, FaSpinner } from 'react-icons/fa';
 
 const POSTS_PER_PAGE = 5;
 
+export const handleCreatePost = async (postData, media, mediaType, setUploadProgress, currentUser) => {
+  try {
+    let mediaURL = null;
+    
+    if (media) {
+      const mediaRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}_${media.name}`);
+      
+      // Upload media
+      const uploadTask = uploadBytesResumable(mediaRef, media);
+      
+      // Create promise to handle upload
+      const uploadPromise = new Promise((resolve, reject) => {
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            setUploadProgress(Math.min(90, progress));
+          },
+          (error) => {
+            console.error('Upload error:', error);
+            reject(error);
+          },
+          async () => {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(downloadURL);
+          }
+        );
+      });
+
+      mediaURL = await uploadPromise;
+    }
+
+    // Create post document
+    const newPost = {
+      content: postData.content,
+      mediaURL,
+      mediaType,
+      authorId: currentUser.uid,
+      authorName: currentUser.displayName || 'Anonymous',
+      authorPhotoURL: currentUser.photoURL,
+      createdAt: serverTimestamp(),
+      likes: [],
+      comments: [],
+      shares: 0,
+      feeling: postData.feeling,
+      location: postData.location,
+      tags: postData.tags,
+      pollOptions: postData.pollOptions?.map(option => ({
+        text: option,
+        votes: []
+      })) || [],
+      scheduledDate: postData.scheduledDate ? new Date(postData.scheduledDate) : null,
+      status: postData.scheduledDate ? 'scheduled' : 'published'
+    };
+
+    const docRef = await addDoc(collection(db, 'posts'), newPost);
+    setUploadProgress(100);
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating post:', error);
+    throw error;
+  }
+};
+
 const Home = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -137,82 +202,6 @@ const Home = () => {
     }
   };
 
-  const handleCreatePost = async (postData, media, mediaType, setUploadProgress) => {
-    try {
-      let mediaURL = null;
-      
-      if (media) {
-        const mediaRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}_${media.name}`);
-        
-        // Upload media
-        const uploadTask = uploadBytesResumable(mediaRef, media);
-        
-        // Create promise to handle upload
-        const uploadPromise = new Promise((resolve, reject) => {
-          uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-              setUploadProgress(Math.min(90, progress));
-            },
-            (error) => {
-              console.error('Upload error:', error);
-              reject(error);
-            },
-            async () => {
-              const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-              resolve(downloadURL);
-            }
-          );
-        });
-
-        mediaURL = await uploadPromise;
-      }
-
-      // Create post document
-      const newPost = {
-        content: postData.content,
-        mediaURL,
-        mediaType,
-        authorId: currentUser.uid,
-        authorName: currentUser.displayName || 'Anonymous',
-        authorPhotoURL: currentUser.photoURL,
-        createdAt: serverTimestamp(),
-        likes: [],
-        comments: [],
-        shares: 0,
-        feeling: postData.feeling,
-        location: postData.location,
-        tags: postData.tags,
-        pollOptions: postData.pollOptions?.map(option => ({
-          text: option,
-          votes: []
-        })) || [],
-        scheduledDate: postData.scheduledDate ? new Date(postData.scheduledDate) : null,
-        status: postData.scheduledDate ? 'scheduled' : 'published'
-      };
-
-      const docRef = await addDoc(collection(db, 'posts'), newPost);
-      setUploadProgress(100);
-
-      // Add to state
-      setPosts(prev => [{
-        id: docRef.id,
-        ...newPost,
-        createdAt: new Date()
-      }, ...prev]);
-
-    } catch (error) {
-      console.error('Error creating post:', error);
-      throw error;
-    }
-  };
-
-  const extractHashtags = (content) => {
-    const hashtagRegex = /#[a-zA-Z0-9_]+/g;
-    return content.match(hashtagRegex) || [];
-  };
-
   const handleLike = async (postId) => {
     const postRef = doc(db, 'posts', postId);
     const hasLiked = posts.find(post => post.id === postId)?.likes?.includes(currentUser.uid);
@@ -298,9 +287,14 @@ const Home = () => {
     }
   };
 
+  const extractHashtags = (content) => {
+    const hashtagRegex = /#[a-zA-Z0-9_]+/g;
+    return content.match(hashtagRegex) || [];
+  };
+
   return (
     <div className="space-y-6 overflow-y-auto h-full">
-      <CreatePost onCreatePost={handleCreatePost} />
+      <CreatePost onCreatePost={(postData, media, mediaType, setUploadProgress) => handleCreatePost(postData, media, mediaType, setUploadProgress, currentUser)} />
       
       {/* Filter Menu */}
       <div className="flex justify-between items-center mb-4">

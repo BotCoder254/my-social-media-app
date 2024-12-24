@@ -10,7 +10,7 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } 
 
 import { storage, db } from '../firebase/config';
 
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, collection, query, where, orderBy, getDocs, limit, startAfter, onSnapshot, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, collection, query, where, orderBy, getDocs, limit, startAfter, onSnapshot, writeBatch, serverTimestamp, deleteDoc } from 'firebase/firestore';
 
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -76,10 +76,96 @@ const Profile = () => {
 
   const lastPostRef = useRef(null);
 
-  const handleDeletePost = () => {};
-  const handleEditPost = () => {};
+  const handleDeletePost = async (postId) => {
+    try {
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      
+      if (postDoc.exists()) {
+        const post = postDoc.data();
+        
+        // Delete media if exists
+        if (post.mediaURL) {
+          const mediaRef = ref(storage, post.mediaURL);
+          await deleteObject(mediaRef);
+        }
+        
+        // Delete post document
+        await deleteDoc(postRef);
+        
+        // Update local state
+        setPosts(prevPosts => prevPosts.filter(p => p.id !== postId));
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+    }
+  };
 
+  const handleEditPost = async (postId, newContent) => {
+    try {
+      const postRef = doc(db, 'posts', postId);
+      await updateDoc(postRef, {
+        content: newContent,
+        editedAt: serverTimestamp()
+      });
+      
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { ...post, content: newContent, editedAt: new Date() }
+            : post
+        )
+      );
+    } catch (error) {
+      console.error('Error editing post:', error);
+    }
+  };
 
+  const handleLike = async (postId) => {
+    if (!currentUser) return;
+    
+    try {
+      const postRef = doc(db, 'posts', postId);
+      const postDoc = await getDoc(postRef);
+      
+      if (postDoc.exists()) {
+        const post = postDoc.data();
+        const likes = post.likes || [];
+        const hasLiked = likes.includes(currentUser.uid);
+        
+        await updateDoc(postRef, {
+          likes: hasLiked 
+            ? arrayRemove(currentUser.uid)
+            : arrayUnion(currentUser.uid)
+        });
+      }
+    } catch (error) {
+      console.error('Error updating like:', error);
+    }
+  };
+
+  const handleComment = async (postId, commentContent) => {
+    if (!currentUser) return;
+    
+    try {
+      const postRef = doc(db, 'posts', postId);
+      const newComment = {
+        id: Date.now().toString(),
+        content: commentContent,
+        authorId: currentUser.uid,
+        authorName: currentUser.displayName || 'Anonymous',
+        authorPhotoURL: currentUser.photoURL,
+        createdAt: serverTimestamp()
+      };
+      
+      await updateDoc(postRef, {
+        comments: arrayUnion(newComment)
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
+  };
 
   // If no userId is provided, use currentUser's ID
 
@@ -97,7 +183,6 @@ const Profile = () => {
       try {
         setLoading(true);
         setPosts([]);
-        setHasMore(true);
 
         // Fetch user profile
         const userDocRef = doc(db, 'users', profileId);
@@ -120,94 +205,64 @@ const Profile = () => {
           }
         }
 
-        // Fetch all posts first to ensure we have data
-        const allPostsQuery = query(
-          collection(db, 'posts'),
-          where('authorId', '==', profileId)
-        );
-
-        const allPostsSnapshot = await getDocs(allPostsQuery);
-
-        if (!allPostsSnapshot.empty) {
-          // Sort posts by createdAt
-          const allPosts = allPostsSnapshot.docs
-            .map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-              createdAt: doc.data().createdAt?.toDate() || new Date()
-            }))
-            .sort((a, b) => b.createdAt - a.createdAt);
-
-          // Take first POSTS_PER_PAGE posts
-          const initialPosts = allPosts.slice(0, POSTS_PER_PAGE);
-          setPosts(initialPosts);
-          
-          // Set lastVisible to the last post in initial batch
-          if (initialPosts.length === POSTS_PER_PAGE) {
-            const lastPost = allPosts[POSTS_PER_PAGE - 1];
-            const lastPostDoc = allPostsSnapshot.docs.find(doc => doc.id === lastPost.id);
-            setLastVisible(lastPostDoc);
-            setHasMore(allPosts.length > POSTS_PER_PAGE);
-          } else {
-            setHasMore(false);
-          }
-        } else {
-          setPosts([]);
-          setHasMore(false);
-        }
-
-        setLoading(false);
-
-        // Set up real-time listener for new posts
-        const realtimeQuery = query(
+        // Fetch initial posts with pagination
+        const postsQuery = query(
           collection(db, 'posts'),
           where('authorId', '==', profileId),
-          orderBy('createdAt', 'desc')
+          orderBy('createdAt', 'desc'),
+          limit(POSTS_PER_PAGE)
         );
 
-        const unsubscribe = onSnapshot(realtimeQuery, (snapshot) => {
-          snapshot.docChanges().forEach((change) => {
-            if (change.type === 'added') {
-              const newPost = {
-                id: change.doc.id,
-                ...change.doc.data(),
-                createdAt: change.doc.data().createdAt?.toDate() || new Date()
-              };
-              
-              setPosts(prevPosts => {
-                if (prevPosts.some(post => post.id === newPost.id)) {
-                  return prevPosts;
-                }
-                const updatedPosts = [newPost, ...prevPosts];
-                return updatedPosts.sort((a, b) => b.createdAt - a.createdAt);
-              });
-            } else if (change.type === 'modified') {
-              setPosts(prevPosts => 
-                prevPosts.map(post => 
-                  post.id === change.doc.id 
-                    ? {
-                        ...post,
-                        ...change.doc.data(),
-                        createdAt: change.doc.data().createdAt?.toDate() || post.createdAt
-                      }
-                    : post
-                )
-              );
-            } else if (change.type === 'removed') {
-              setPosts(prevPosts => prevPosts.filter(post => post.id !== change.doc.id));
-            }
-          });
-        });
+        const postsSnapshot = await getDocs(postsQuery);
+        const fetchedPosts = postsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
 
-        return () => {
-          unsubscribe();
-        };
-
-      } catch (error) {
-        console.error('Error fetching user profile and posts:', error);
+        setPosts(fetchedPosts);
+        setLastVisible(postsSnapshot.docs[postsSnapshot.docs.length - 1]);
+        setHasMore(postsSnapshot.docs.length === POSTS_PER_PAGE);
         setLoading(false);
-        setPosts([]);
-        setHasMore(false);
+
+        // Set up real-time listener for post updates
+        const unsubscribe = onSnapshot(
+          query(
+            collection(db, 'posts'),
+            where('authorId', '==', profileId),
+            orderBy('createdAt', 'desc')
+          ),
+          (snapshot) => {
+            snapshot.docChanges().forEach((change) => {
+              const postData = change.doc.data();
+              const post = {
+                id: change.doc.id,
+                ...postData,
+                createdAt: postData.createdAt?.toDate() || new Date()
+              };
+
+              if (change.type === 'added' && change.doc.metadata.hasPendingWrites) {
+                // Local add
+                setPosts(prevPosts => [post, ...prevPosts]);
+              } else if (change.type === 'modified') {
+                // Update
+                setPosts(prevPosts => 
+                  prevPosts.map(p => p.id === post.id ? post : p)
+                );
+              } else if (change.type === 'removed') {
+                // Remove
+                setPosts(prevPosts => 
+                  prevPosts.filter(p => p.id !== post.id)
+                );
+              }
+            });
+          }
+        );
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        setLoading(false);
       }
     };
 
@@ -215,47 +270,31 @@ const Profile = () => {
   }, [profileId, currentUser?.uid, isOwnProfile]);
 
   const loadMorePosts = async () => {
-    if (!lastVisible || !hasMore || loading) return;
+    if (!hasMore || loading) return;
 
     try {
-      setLoading(true);
-
-      // Fetch all remaining posts
-      const remainingPostsQuery = query(
+      const postsQuery = query(
         collection(db, 'posts'),
-        where('authorId', '==', profileId)
+        where('authorId', '==', profileId),
+        orderBy('createdAt', 'desc'),
+        startAfter(lastVisible),
+        limit(POSTS_PER_PAGE)
       );
 
-      const querySnapshot = await getDocs(remainingPostsQuery);
-      
-      if (!querySnapshot.empty) {
-        const newPosts = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate() || new Date()
-        }));
+      const snapshot = await getDocs(postsQuery);
+      const newPosts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date()
+      }));
 
-        setPosts(prevPosts => {
-          const existingIds = new Set(prevPosts.map(p => p.id));
-          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
-          const allPosts = [...prevPosts, ...uniqueNewPosts];
-          return allPosts.sort((a, b) => b.createdAt - a.createdAt);
-        });
-
-        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
-      } else {
-        setHasMore(false);
-      }
+      setPosts(prevPosts => [...prevPosts, ...newPosts]);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
     } catch (error) {
       console.error('Error loading more posts:', error);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
     }
   };
-
-
 
   const handleImageChange = async (e) => {
 
@@ -516,38 +555,6 @@ const Profile = () => {
 
     }
 
-  };
-
-  const handleLike = async (postId) => {
-    const postRef = doc(db, 'posts', postId);
-    const hasLiked = posts.find(post => post.id === postId)?.likes?.includes(currentUser.uid);
-    
-    try {
-      await updateDoc(postRef, {
-        likes: hasLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid)
-      });
-    } catch (error) {
-      console.error('Error updating like:', error);
-    }
-  };
-
-  const handleComment = async (postId, commentContent) => {
-    const postRef = doc(db, 'posts', postId);
-    const newComment = {
-      content: commentContent,
-      authorId: currentUser.uid,
-      authorName: currentUser.displayName || 'Anonymous',
-      authorPhotoURL: currentUser.photoURL,
-      createdAt: new Date().toISOString()
-    };
-
-    try {
-      await updateDoc(postRef, {
-        comments: arrayUnion(newComment)
-      });
-    } catch (error) {
-      console.error('Error adding comment:', error);
-    }
   };
 
   const handleCoverPhotoChange = async (e) => {
@@ -817,11 +824,11 @@ const Profile = () => {
           <div className="mt-6 sm:mt-8">
             <h2 className="text-xl sm:text-2xl font-bold mb-4">Posts</h2>
             <div className="space-y-4">
-              {loading && posts.length === 0 ? (
+              {loading ? (
                 <div className="flex justify-center p-4">
                   <LoadingAnimation />
                 </div>
-              ) : posts.length > 0 ? (
+              ) : posts && posts.length > 0 ? (
                 <div className="space-y-4">
                   {posts.map((post) => (
                     <Post
