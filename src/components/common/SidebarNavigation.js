@@ -138,6 +138,13 @@ const SidebarNavigation = () => {
             <span className="text-xs">{item.label}</span>
           </Link>
         ))}
+        <button
+          onClick={handleLogout}
+          className="flex flex-col items-center justify-center flex-1 h-full text-gray-500 hover:text-primary"
+        >
+          <FaSignOutAlt className="text-xl mb-1" />
+          <span className="text-xs">Logout</span>
+        </button>
       </div>
     </div>
   );
