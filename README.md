@@ -26,7 +26,6 @@
 - 📱 **Responsive**: Fully responsive design for all device sizes
 - 🔄 **Real-time Updates**: Live feed updates using Firebase Realtime Database
 - 🖼️ **Media Sharing**: Support for images and media content
-- 🌙 **Dark Mode**: Built-in dark mode support
 - 🔍 **Search & Discovery**: Find users and content easily
 
 ## 🚀 Getting Started
