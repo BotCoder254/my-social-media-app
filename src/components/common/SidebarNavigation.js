@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +20,12 @@ const SidebarNavigation = () => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(true);
 
+  useEffect(() => {
+    if (!currentUser) {
+      navigate('/login');
+    }
+  }, [currentUser, navigate]);
+
   if (!currentUser) return null;
 
   const navItems = [
@@ -34,9 +40,9 @@ const SidebarNavigation = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/');
+      navigate('/login');
     } catch (error) {
-      console.error('Failed to log out', error);
+      console.error('Failed to log out:', error);
     }
   };
 
