@@ -582,7 +582,7 @@ const Profile = () => {
 
   return (
 
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
       {/* Cover Photo */}
 
@@ -646,444 +646,249 @@ const Profile = () => {
 
 
 
-      {/* Profile Info */}
-
-      <div className="relative px-4 sm:px-6 lg:px-8">
-
-        <div className="relative -mt-24">
-
-          <div className="relative inline-block">
-
-            <motion.img
-
-              whileHover={{ scale: 1.05 }}
-
-              src={userProfile?.photoURL || 'https://via.placeholder.com/150'}
-
-              alt="Profile"
-
-              className="w-40 h-40 rounded-full border-4 border-white shadow-lg object-cover"
-
-            />
-
-            {isOwnProfile && (
-
-              <motion.button
-
-                whileHover={{ scale: 1.1 }}
-
-                whileTap={{ scale: 0.9 }}
-
-                onClick={() => fileInputRef.current.click()}
-
-                className="absolute bottom-2 right-2 bg-primary text-white p-2 rounded-full shadow-lg hover:bg-primary-600"
-
-              >
-
-                <FaCamera className="text-lg" />
-
-              </motion.button>
-
-            )}
-
-            <input
-
-              type="file"
-
-              ref={fileInputRef}
-
-              onChange={handleImageChange}
-
-              accept="image/*"
-
-              className="hidden"
-
-            />
-
-          </div>
-
-        </div>
-
-
-
-        <div className="mt-6">
-
-          <div className="flex justify-between items-center mb-6">
-
-            <div>
-
-              <h1 className="text-3xl font-bold text-gray-900">
-
-                {userProfile?.displayName || 'Anonymous'}
-
-              </h1>
-
-              <p className="text-gray-600 mt-1">{userProfile?.email}</p>
-
-            </div>
-
-            <div className="flex space-x-3">
-
-              {isOwnProfile ? (
-
-                <motion.button
-
-                  whileHover={{ scale: 1.05 }}
-
-                  whileTap={{ scale: 0.95 }}
-
-                  onClick={() => setIsEditMode(!isEditMode)}
-
-                  className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-600"
-
-                >
-
-                  {isEditMode ? 'Cancel Edit' : 'Edit Profile'}
-
-                </motion.button>
-
-              ) : (
-
-                <motion.button
-
-                  whileHover={{ scale: 1.05 }}
-
-                  whileTap={{ scale: 0.95 }}
-
-                  onClick={handleFollowToggle}
-
-                  className={`px-4 py-2 rounded-lg ${
-
-                    isFollowing ? 'bg-red-500 text-white' : 'bg-primary text-white'
-
-                  }`}
-
-                >
-
-                  {isFollowing ? 'Unfollow' : 'Follow'}
-
-                </motion.button>
-
-              )}
-
-            </div>
-
-          </div>
-
-
-
-          {isEditMode ? (
-
-            // Edit Form
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-
-              <div>
-
-                <label className="form-label">Display Name</label>
-
-                <input
-
-                  type="text"
-
-                  value={displayName}
-
-                  onChange={(e) => setDisplayName(e.target.value)}
-
-                  className="form-input"
-
-                />
-
-              </div>
-
-
-
-              <div>
-
-                <label className="form-label">Bio</label>
-
-                <textarea
-
-                  value={bio}
-
-                  onChange={(e) => setBio(e.target.value)}
-
-                  className="form-input min-h-[100px]"
-
-                  placeholder="Tell us about yourself..."
-
-                />
-
-              </div>
-
-
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <div>
-
-                  <label className="form-label">Location</label>
-
-                  <div className="relative">
-
-                    <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-
-                    <input
-
-                      type="text"
-
-                      value={location}
-
-                      onChange={(e) => setLocation(e.target.value)}
-
-                      className="form-input pl-10"
-
-                      placeholder="Your location"
-
+      {/* Profile Content */}
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative -mt-16 sm:-mt-24 pb-12">
+          {/* Profile Picture and Basic Info */}
+          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
+              {/* Profile Picture */}
+              <div className="relative flex-shrink-0">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white bg-gray-200">
+                  {userProfile?.photoURL ? (
+                    <img
+                      src={userProfile.photoURL}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
                     />
-
-                  </div>
-
+                  ) : (
+                    <FaUserCircle className="w-full h-full text-gray-400" />
+                  )}
                 </div>
-
-
-
-                <div>
-
-                  <label className="form-label">Occupation</label>
-
-                  <div className="relative">
-
-                    <FaBriefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-
+                {isOwnProfile && (
+                  <label className="absolute bottom-0 right-0 bg-white rounded-full p-2 cursor-pointer shadow-md">
                     <input
-
-                      type="text"
-
-                      value={occupation}
-
-                      onChange={(e) => setOccupation(e.target.value)}
-
-                      className="form-input pl-10"
-
-                      placeholder="Your occupation"
-
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageChange}
+                      className="hidden"
+                      accept="image/*"
                     />
+                    <FaCamera className="text-gray-600 text-lg sm:text-xl hover:text-gray-800" />
+                  </label>
+                )}
+              </div>
 
+              {/* Profile Info */}
+              <div className="flex-1 w-full text-center sm:text-left space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                  <div className="mb-4 sm:mb-0 space-y-2">
+                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">
+                      {displayName || 'Anonymous'}
+                    </h1>
+                    {!isOwnProfile && (
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleFollowToggle}
+                        className="w-full sm:w-auto mt-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold"
+                      >
+                        {isFollowing ? 'Following' : 'Follow'}
+                      </motion.button>
+                    )}
                   </div>
-
+                  {isOwnProfile && (
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setEditing(!editing)}
+                      className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <FaEdit className="mr-2" />
+                      {editing ? 'Cancel' : 'Edit Profile'}
+                    </motion.button>
+                  )}
                 </div>
 
+                {editing ? (
+                  <form onSubmit={handleSubmit} className="space-y-4 w-full">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Display Name</label>
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                          placeholder="Your display name"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700">Bio</label>
+                        <textarea
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                          rows="3"
+                          placeholder="Tell us about yourself"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">Location</label>
+                          <div className="relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <FaMapMarkerAlt className="text-gray-400" />
+                            </div>
+                            <input
+                              type="text"
+                              value={location}
+                              onChange={(e) => setLocation(e.target.value)}
+                              className="w-full pl-10 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+                              placeholder="Your location"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-sm font-medium text-gray-700">Occupation</label>
+                          <div className="relative rounded-md shadow-sm">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                              <FaBriefcase className="text-gray-400" />
+                            </div>
+                            <input
+                              type="text"
+                              value={occupation}
+                              onChange={(e) => setOccupation(e.target.value)}
+                              className="w-full pl-10 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+                              placeholder="Your occupation"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="button"
+                        onClick={() => setEditing(false)}
+                        className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        Cancel
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        type="submit"
+                        disabled={loading}
+                        className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                      >
+                        {loading ? 'Saving...' : 'Save Changes'}
+                      </motion.button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <FaMapMarkerAlt className="flex-shrink-0" />
+                        <span className="truncate">{location || 'Add location'}</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-gray-600">
+                        <FaBriefcase className="flex-shrink-0" />
+                        <span className="truncate">{occupation || 'Add occupation'}</span>
+                      </div>
+                    </div>
+
+                    <div className="prose max-w-none">
+                      <p className="text-gray-600 break-words">{bio || 'Add a bio to tell people about yourself'}</p>
+                    </div>
+
+                    {website && (
+                      <div className="flex items-center space-x-2 text-primary">
+                        <FaGlobe className="flex-shrink-0" />
+                        <a 
+                          href={website} 
+                          target="_blank" 
+                          rel="noopener noreferrer" 
+                          className="hover:underline truncate"
+                        >
+                          {website}
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-
-
-
-              <div>
-
-                <label className="form-label">Website</label>
-
-                <div className="relative">
-
-                  <FaGlobe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-
-                  <input
-
-                    type="url"
-
-                    value={website}
-
-                    onChange={(e) => setWebsite(e.target.value)}
-
-                    className="form-input pl-10"
-
-                    placeholder="Your website"
-
-                  />
-
-                </div>
-
-              </div>
-
-
-
-              <div className="flex justify-end space-x-3">
-
-                <motion.button
-
-                  whileHover={{ scale: 1.02 }}
-
-                  whileTap={{ scale: 0.98 }}
-
-                  type="button"
-
-                  onClick={() => setEditing(false)}
-
-                  className="btn-secondary"
-
-                >
-
-                  Cancel
-
-                </motion.button>
-
-                <motion.button
-
-                  whileHover={{ scale: 1.02 }}
-
-                  whileTap={{ scale: 0.98 }}
-
-                  type="submit"
-
-                  disabled={loading}
-
-                  className="btn-primary"
-
-                >
-
-                  Save Changes
-
-                </motion.button>
-
-              </div>
-
-            </form>
-
-          ) : (
-
-            // Profile Info Display
-
-            <div className="space-y-6">
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                <div className="flex items-center space-x-2 text-gray-600">
-
-                  <FaMapMarkerAlt />
-
-                  <span>{location || 'Add location'}</span>
-
-                </div>
-
-                <div className="flex items-center space-x-2 text-gray-600">
-
-                  <FaBriefcase />
-
-                  <span>{occupation || 'Add occupation'}</span>
-
-                </div>
-
-              </div>
-
-
-
-              <div className="prose max-w-none">
-
-                <p className="text-gray-600">{bio || 'Add a bio to tell people about yourself'}</p>
-
-              </div>
-
-
-
-              {website && (
-
-                <div className="flex items-center space-x-2 text-primary">
-
-                  <FaGlobe />
-
-                  <a href={website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-
-                    {website}
-
-                  </a>
-
-                </div>
-
-              )}
-
             </div>
 
-          )}
-
-
-
-          {/* Stats Section */}
-
-          <div className="mt-8 grid grid-cols-3 gap-4 text-center">
-
-            <div className="bg-white rounded-lg shadow-sm p-4">
-
-              <div className="text-2xl font-bold text-gray-900">{followersCount}</div>
-
-              <div className="text-sm text-gray-500">Followers</div>
-
+            {/* Stats Section */}
+            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{followersCount}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Followers</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{followingCount}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Following</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{posts.length}</div>
+                <div className="text-xs sm:text-sm text-gray-500">Posts</div>
+              </div>
             </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-4">
-
-              <div className="text-2xl font-bold text-gray-900">{followingCount}</div>
-
-              <div className="text-sm text-gray-500">Following</div>
-
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm p-4">
-
-              <div className="text-2xl font-bold text-gray-900">{posts.length}</div>
-
-              <div className="text-sm text-gray-500">Posts</div>
-
-            </div>
-
           </div>
-
-
 
           {/* Posts Section */}
-          <div className="mt-8">
-            <h2 className="text-2xl font-bold mb-4">Posts</h2>
-            {loading && posts.length === 0 ? (
-              <div className="flex justify-center">
-                <LoadingAnimation />
-              </div>
-            ) : posts.length > 0 ? (
-              <InfiniteScroll
-                dataLength={posts.length}
-                next={loadMorePosts}
-                hasMore={hasMore}
-                loader={
-                  <div className="flex justify-center my-4">
-                    <LoadingAnimation />
-                  </div>
-                }
-                endMessage={
-                  <p className="text-center text-gray-500 my-4">
-                    No more posts to show
-                  </p>
-                }
-              >
-                <div className="space-y-4">
-                  {posts.map((post, index) => (
-                    <Post
-                      key={post.id}
-                      post={post}
-                      onLike={handleLike}
-                      onComment={handleComment}
-                      onDelete={handleDeletePost}
-                      onEdit={handleEditPost}
-                      ref={index === posts.length - 1 ? lastPostRef : null}
-                    />
-                  ))}
+          <div className="mt-6 sm:mt-8">
+            <h2 className="text-xl sm:text-2xl font-bold mb-4">Posts</h2>
+            <div className="space-y-4">
+              {loading && posts.length === 0 ? (
+                <div className="flex justify-center p-4">
+                  <LoadingAnimation />
                 </div>
-              </InfiniteScroll>
-            ) : (
-              <div className="text-center text-gray-500 py-8">
-                {isOwnProfile ? "You haven't posted anything yet" : "No posts yet"}
-              </div>
-            )}
+              ) : posts.length > 0 ? (
+                <InfiniteScroll
+                  dataLength={posts.length}
+                  next={loadMorePosts}
+                  hasMore={hasMore}
+                  loader={
+                    <div className="flex justify-center p-4">
+                      <LoadingAnimation />
+                    </div>
+                  }
+                  endMessage={
+                    <p className="text-center text-gray-500 py-4">
+                      No more posts to show
+                    </p>
+                  }
+                >
+                  <div className="space-y-4">
+                    {posts.map((post) => (
+                      <Post
+                        key={post.id}
+                        post={post}
+                        onLike={handleLike}
+                        onComment={handleComment}
+                        onDelete={isOwnProfile ? handleDeletePost : undefined}
+                        onEdit={isOwnProfile ? handleEditPost : undefined}
+                      />
+                    ))}
+                  </div>
+                </InfiniteScroll>
+              ) : (
+                <div className="text-center text-gray-500 py-8">
+                  {isOwnProfile ? "You haven't posted anything yet" : "No posts yet"}
+                </div>
+              )}
+            </div>
           </div>
-
         </div>
-
       </div>
 
       {showSuccess && (
