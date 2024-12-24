@@ -10,7 +10,7 @@ import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } 
 
 import { storage, db } from '../firebase/config';
 
-import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, collection, query, where, orderBy, getDocs, limit, startAfter, onSnapshot, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, arrayUnion, arrayRemove, getDoc, setDoc, collection, query, where, orderBy, getDocs, limit, startAfter, onSnapshot, writeBatch, serverTimestamp } from 'firebase/firestore';
 
 import { useParams, useNavigate } from 'react-router-dom';
 
@@ -405,50 +405,63 @@ const Profile = () => {
 
 
   const handleSubmit = async (e) => {
-
     e.preventDefault();
-
     setLoading(true);
-
+    
     try {
-
-      await updateUserProfile(displayName, currentUser.photoURL);
-
-      
-
-      // Update user document in Firestore
-
       const userRef = doc(db, 'users', currentUser.uid);
-
+      const oldProfile = (await getDoc(userRef)).data();
+      
+      // Update user profile
       await updateDoc(userRef, {
-
         displayName,
-
         bio,
-
         location,
-
         occupation,
-
-        website
-
+        website,
+        updatedAt: serverTimestamp()
       });
 
+      // If display name has changed, update all posts by this user
+      if (oldProfile.displayName !== displayName) {
+        const postsRef = collection(db, 'posts');
+        const q = query(postsRef, where('authorId', '==', currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        
+        const batch = writeBatch(db);
+        querySnapshot.forEach((doc) => {
+          batch.update(doc.ref, {
+            authorName: displayName
+          });
+        });
+        await batch.commit();
+      }
+
+      // Update auth profile
+      if (auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          displayName: displayName
+        });
+      }
+
+      setUserProfile(prev => ({
+        ...prev,
+        displayName,
+        bio,
+        location,
+        occupation,
+        website
+      }));
       
-
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
       setEditing(false);
-
     } catch (error) {
-
       console.error('Error updating profile:', error);
-
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
-
   };
-
-
 
   const handleFollowToggle = async () => {
 
