@@ -123,5 +123,5 @@ Project Link: [https://github.com/yourusername/social-app](https://github.com/yo
 ---
 
 <div align="center">
-  Made with ❤️ by [Your Name]
+  Made with ❤️ by Telvin Teum 
 </div>
