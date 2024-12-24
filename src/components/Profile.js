@@ -74,6 +74,11 @@ const Profile = () => {
 
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const lastPostRef = useRef(null);
+
+  const handleDeletePost = () => {};
+  const handleEditPost = () => {};
+
 
 
   // If no userId is provided, use currentUser's ID
@@ -87,167 +92,170 @@ const Profile = () => {
   useEffect(() => {
 
     const fetchUserProfile = async () => {
-
       if (!profileId) return;
 
-
-
       try {
+        setLoading(true);
+        setPosts([]);
+        setHasMore(true);
 
+        // Fetch user profile
         const userDocRef = doc(db, 'users', profileId);
-
-        const unsubscribeProfile = onSnapshot(userDocRef, (doc) => {
-
-          if (doc.exists()) {
-
-            const userData = doc.data();
-
-            setUserProfile(userData);
-
-            setIsFollowing(userData.followers?.includes(currentUser?.uid));
-
-            setFollowersCount(userData.followers?.length || 0);
-
-            setFollowingCount(userData.following?.length || 0);
-
-            setCoverPhoto(userData.coverPhoto || '');
-
-            
-
-            if (isOwnProfile) {
-
-              setBio(userData.bio || '');
-
-              setLocation(userData.location || '');
-
-              setOccupation(userData.occupation || '');
-
-              setWebsite(userData.website || '');
-
-              setDisplayName(userData.displayName || '');
-
-            }
-
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUserProfile(userData);
+          setIsFollowing(userData.followers?.includes(currentUser?.uid));
+          setFollowersCount(userData.followers?.length || 0);
+          setFollowingCount(userData.following?.length || 0);
+          setCoverPhoto(userData.coverPhoto || '');
+          
+          if (isOwnProfile) {
+            setBio(userData.bio || '');
+            setLocation(userData.location || '');
+            setOccupation(userData.occupation || '');
+            setWebsite(userData.website || '');
+            setDisplayName(userData.displayName || '');
           }
+        }
 
-        });
-
-
-
-        const postsQuery = query(
-
+        // Fetch all posts first to ensure we have data
+        const allPostsQuery = query(
           collection(db, 'posts'),
-
-          where('authorId', '==', profileId),
-
-          orderBy('createdAt', 'desc'),
-
-          limit(POSTS_PER_PAGE)
-
+          where('authorId', '==', profileId)
         );
 
-        
+        const allPostsSnapshot = await getDocs(allPostsQuery);
 
-        const unsubscribePosts = onSnapshot(postsQuery, (snapshot) => {
-
-          if (!snapshot.empty) {
-
-            const postsData = snapshot.docs.map(doc => ({
-
+        if (!allPostsSnapshot.empty) {
+          // Sort posts by createdAt
+          const allPosts = allPostsSnapshot.docs
+            .map(doc => ({
               id: doc.id,
+              ...doc.data(),
+              createdAt: doc.data().createdAt?.toDate() || new Date()
+            }))
+            .sort((a, b) => b.createdAt - a.createdAt);
 
-              ...doc.data()
-
-            }));
-
-            setPosts(postsData);
-
-            setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-
-            setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
-
+          // Take first POSTS_PER_PAGE posts
+          const initialPosts = allPosts.slice(0, POSTS_PER_PAGE);
+          setPosts(initialPosts);
+          
+          // Set lastVisible to the last post in initial batch
+          if (initialPosts.length === POSTS_PER_PAGE) {
+            const lastPost = allPosts[POSTS_PER_PAGE - 1];
+            const lastPostDoc = allPostsSnapshot.docs.find(doc => doc.id === lastPost.id);
+            setLastVisible(lastPostDoc);
+            setHasMore(allPosts.length > POSTS_PER_PAGE);
           } else {
-
-            setPosts([]);
-
             setHasMore(false);
-
           }
+        } else {
+          setPosts([]);
+          setHasMore(false);
+        }
 
+        setLoading(false);
+
+        // Set up real-time listener for new posts
+        const realtimeQuery = query(
+          collection(db, 'posts'),
+          where('authorId', '==', profileId),
+          orderBy('createdAt', 'desc')
+        );
+
+        const unsubscribe = onSnapshot(realtimeQuery, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added') {
+              const newPost = {
+                id: change.doc.id,
+                ...change.doc.data(),
+                createdAt: change.doc.data().createdAt?.toDate() || new Date()
+              };
+              
+              setPosts(prevPosts => {
+                if (prevPosts.some(post => post.id === newPost.id)) {
+                  return prevPosts;
+                }
+                const updatedPosts = [newPost, ...prevPosts];
+                return updatedPosts.sort((a, b) => b.createdAt - a.createdAt);
+              });
+            } else if (change.type === 'modified') {
+              setPosts(prevPosts => 
+                prevPosts.map(post => 
+                  post.id === change.doc.id 
+                    ? {
+                        ...post,
+                        ...change.doc.data(),
+                        createdAt: change.doc.data().createdAt?.toDate() || post.createdAt
+                      }
+                    : post
+                )
+              );
+            } else if (change.type === 'removed') {
+              setPosts(prevPosts => prevPosts.filter(post => post.id !== change.doc.id));
+            }
+          });
         });
 
         return () => {
-
-          unsubscribeProfile();
-
-          unsubscribePosts();
-
+          unsubscribe();
         };
 
       } catch (error) {
-
-        console.error('Error fetching user profile:', error);
-
+        console.error('Error fetching user profile and posts:', error);
+        setLoading(false);
+        setPosts([]);
+        setHasMore(false);
       }
-
     };
 
-
-
     fetchUserProfile();
-
-  }, [profileId, currentUser, isOwnProfile]);
-
-
+  }, [profileId, currentUser?.uid, isOwnProfile]);
 
   const loadMorePosts = async () => {
-
-    if (!lastVisible) return;
-
-
+    if (!lastVisible || !hasMore || loading) return;
 
     try {
+      setLoading(true);
 
-      const nextQuery = query(
-
+      // Fetch all remaining posts
+      const remainingPostsQuery = query(
         collection(db, 'posts'),
-
         where('authorId', '==', profileId),
-
         orderBy('createdAt', 'desc'),
-
         startAfter(lastVisible),
-
         limit(POSTS_PER_PAGE)
-
       );
 
+      const querySnapshot = await getDocs(remainingPostsQuery);
+      
+      if (!querySnapshot.empty) {
+        const newPosts = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date()
+        }));
 
+        setPosts(prevPosts => {
+          const existingIds = new Set(prevPosts.map(p => p.id));
+          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+          const allPosts = [...prevPosts, ...uniqueNewPosts];
+          return allPosts.sort((a, b) => b.createdAt - a.createdAt);
+        });
 
-      const snapshot = await getDocs(nextQuery);
-
-      const newPosts = snapshot.docs.map(doc => ({
-
-        id: doc.id,
-
-        ...doc.data()
-
-      }));
-
-
-
-      setPosts(prevPosts => [...prevPosts, ...newPosts]);
-
-      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
-
-      setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
-
+        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+        setHasMore(querySnapshot.docs.length === POSTS_PER_PAGE);
+      } else {
+        setHasMore(false);
+      }
     } catch (error) {
-
       console.error('Error loading more posts:', error);
-
+      setHasMore(false);
+    } finally {
+      setLoading(false);
     }
-
   };
 
 
@@ -1030,62 +1038,48 @@ const Profile = () => {
 
 
 
-          {/* User Posts */}
-
+          {/* Posts Section */}
           <div className="mt-8">
-
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Posts</h2>
-
-            <InfiniteScroll
-
-              dataLength={posts.length}
-
-              next={loadMorePosts}
-
-              hasMore={hasMore}
-
-              loader={
-
-                <div className="flex justify-center py-4">
-
-                  <LoadingAnimation />
-
+            <h2 className="text-2xl font-bold mb-4">Posts</h2>
+            {loading && posts.length === 0 ? (
+              <div className="flex justify-center">
+                <LoadingAnimation />
+              </div>
+            ) : posts.length > 0 ? (
+              <InfiniteScroll
+                dataLength={posts.length}
+                next={loadMorePosts}
+                hasMore={hasMore}
+                loader={
+                  <div className="flex justify-center my-4">
+                    <LoadingAnimation />
+                  </div>
+                }
+                endMessage={
+                  <p className="text-center text-gray-500 my-4">
+                    No more posts to show
+                  </p>
+                }
+              >
+                <div className="space-y-4">
+                  {posts.map((post, index) => (
+                    <Post
+                      key={post.id}
+                      post={post}
+                      onLike={handleLike}
+                      onComment={handleComment}
+                      onDelete={handleDeletePost}
+                      onEdit={handleEditPost}
+                      ref={index === posts.length - 1 ? lastPostRef : null}
+                    />
+                  ))}
                 </div>
-
-              }
-
-              endMessage={
-
-                <p className="text-center text-gray-500 py-4">
-
-                  {posts.length === 0 ? "No posts yet" : "No more posts to load"}
-
-                </p>
-
-              }
-
-              className="space-y-6"
-
-            >
-
-              {posts.map(post => (
-
-                <Post
-
-                  key={post.id}
-
-                  post={post}
-
-                  onLike={handleLike}
-
-                  onComment={handleComment}
-
-                />
-
-              ))}
-
-            </InfiniteScroll>
-
+              </InfiniteScroll>
+            ) : (
+              <div className="text-center text-gray-500 py-8">
+                {isOwnProfile ? "You haven't posted anything yet" : "No posts yet"}
+              </div>
+            )}
           </div>
 
         </div>

@@ -116,12 +116,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
+EMAIL: [Telvivaztelvin@gmail.com](mailto:BotCoder254@gmail.com)
 
-Project Link: [https://github.com/yourusername/social-app](https://github.com/yourusername/social-app)
+Project Link: [https://github.com/BotCoder254/my-social-media-app](https://github.com/yourusername/social-app)
 
 ---
 
 <div align="center">
-  Made with ❤️ by Telvin Teum 
+  Made with ❤️ by [Your Name]
 </div>

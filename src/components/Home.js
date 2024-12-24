@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, arrayUnion, arrayRemove, serverTimestamp, where, limit, startAfter, getDoc, setDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, addDoc, updateDoc, deleteDoc, doc, arrayUnion, arrayRemove, serverTimestamp, where, limit, startAfter, getDoc, setDoc, getDocs } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, uploadBytesResumable, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
@@ -91,30 +91,50 @@ const Home = () => {
         limit(POSTS_PER_PAGE)
       );
     } else if (filter === 'following') {
-      q = query(
-        collection(db, 'posts'),
-        where('authorId', 'in', [...(currentUser.following || []), currentUser.uid]),
-        orderBy('createdAt', 'desc'),
-        startAfter(lastPostRef.current),
-        limit(POSTS_PER_PAGE)
-      );
+      if (!currentUser.following?.length) {
+        q = query(
+          collection(db, 'posts'),
+          where('authorId', '==', currentUser.uid),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastPostRef.current),
+          limit(POSTS_PER_PAGE)
+        );
+      } else {
+        q = query(
+          collection(db, 'posts'),
+          where('authorId', 'in', [...(currentUser.following || []), currentUser.uid]),
+          orderBy('createdAt', 'desc'),
+          startAfter(lastPostRef.current),
+          limit(POSTS_PER_PAGE)
+        );
+      }
     }
 
     try {
-      const snapshot = await q.get();
-      const newPosts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      setPosts(prev => [...prev, ...newPosts]);
-      lastPostRef.current = snapshot.docs[snapshot.docs.length - 1];
-      setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const newPosts = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        
+        setPosts(prev => {
+          // Filter out any duplicate posts
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewPosts];
+        });
+        
+        lastPostRef.current = snapshot.docs[snapshot.docs.length - 1];
+        setHasMore(snapshot.docs.length === POSTS_PER_PAGE);
+      } else {
+        setHasMore(false);
+      }
     } catch (error) {
       console.error('Error loading more posts:', error);
+    } finally {
+      setLoadingMore(false);
     }
-    
-    setLoadingMore(false);
   };
 
   const handleCreatePost = async (postData, media, mediaType, setUploadProgress) => {
