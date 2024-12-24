@@ -223,10 +223,7 @@ const Profile = () => {
       // Fetch all remaining posts
       const remainingPostsQuery = query(
         collection(db, 'posts'),
-        where('authorId', '==', profileId),
-        orderBy('createdAt', 'desc'),
-        startAfter(lastVisible),
-        limit(POSTS_PER_PAGE)
+        where('authorId', '==', profileId)
       );
 
       const querySnapshot = await getDocs(remainingPostsQuery);
@@ -594,81 +591,42 @@ const Profile = () => {
 
 
   return (
-
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-      {/* Cover Photo */}
-
-      <div className="relative h-64 rounded-xl overflow-hidden group">
-
-        <div 
-
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-
-          style={{ 
-
-            backgroundImage: `url(${coverPhoto || 'https://source.unsplash.com/random/1200x400/?landscape'})` 
-
-          }}
-
-        >
-
-          <div className="absolute inset-0 bg-black/20"></div>
-
-        </div>
-
-        {isOwnProfile && (
-
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-
-            <motion.button
-
-              whileHover={{ scale: 1.1 }}
-
-              whileTap={{ scale: 0.9 }}
-
-              onClick={() => coverPhotoRef.current.click()}
-
-              className="bg-white text-gray-800 px-4 py-2 rounded-lg shadow-lg"
-
-            >
-
-              Change Cover Photo
-
-            </motion.button>
-
-            <input
-
-              type="file"
-
-              ref={coverPhotoRef}
-
-              onChange={handleCoverPhotoChange}
-
-              accept="image/*"
-
-              className="hidden"
-
-            />
-
-          </div>
-
+    <div className="min-h-screen bg-gray-50">
+      {/* Cover Photo Section */}
+      <div className="relative h-40 sm:h-48 md:h-64 lg:h-80 w-full bg-gray-200 overflow-hidden">
+        {coverPhoto ? (
+          <img
+            src={coverPhoto}
+            alt="Cover"
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-blue-400 to-purple-500" />
         )}
-
+        
+        {isOwnProfile && (
+          <label className="absolute bottom-4 right-4 cursor-pointer">
+            <input
+              type="file"
+              ref={coverPhotoRef}
+              onChange={handleCoverPhotoChange}
+              className="hidden"
+              accept="image/*"
+            />
+            <FaCamera className="text-white text-xl sm:text-2xl hover:text-gray-200" />
+          </label>
+        )}
       </div>
 
-
-
       {/* Profile Content */}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative -mt-16 sm:-mt-24 pb-12">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative -mt-16 sm:-mt-20 pb-8">
           {/* Profile Picture and Basic Info */}
-          <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-6">
+          <div className="bg-white rounded-lg shadow p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-6">
               {/* Profile Picture */}
               <div className="relative flex-shrink-0">
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white bg-gray-200">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white bg-gray-200 shadow">
                   {userProfile?.photoURL ? (
                     <img
                       src={userProfile.photoURL}
@@ -688,16 +646,16 @@ const Profile = () => {
                       className="hidden"
                       accept="image/*"
                     />
-                    <FaCamera className="text-gray-600 text-lg sm:text-xl hover:text-gray-800" />
+                    <FaCamera className="text-gray-600 text-lg hover:text-gray-800" />
                   </label>
                 )}
               </div>
 
               {/* Profile Info */}
-              <div className="flex-1 w-full text-center sm:text-left space-y-4">
+              <div className="flex-1 min-w-0 text-center sm:text-left">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                  <div className="mb-4 sm:mb-0 space-y-2">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">
+                  <div className="mb-4 sm:mb-0">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 truncate">
                       {displayName || 'Anonymous'}
                     </h1>
                     {!isOwnProfile && (
@@ -705,7 +663,7 @@ const Profile = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleFollowToggle}
-                        className="w-full sm:w-auto mt-2 px-4 sm:px-6 py-2 rounded-full text-sm font-semibold"
+                        className="mt-2 w-full sm:w-auto px-6 py-2 rounded-full text-sm font-semibold"
                       >
                         {isFollowing ? 'Following' : 'Follow'}
                       </motion.button>
@@ -716,67 +674,63 @@ const Profile = () => {
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => setEditing(!editing)}
-                      className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 mb-4 sm:mb-0"
                     >
-                      <FaEdit className="mr-2" />
+                      <FaEdit className="inline-block mr-2" />
                       {editing ? 'Cancel' : 'Edit Profile'}
                     </motion.button>
                   )}
                 </div>
 
                 {editing ? (
-                  <form onSubmit={handleSubmit} className="space-y-4 w-full">
-                    <div className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Display Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Display Name</label>
                         <input
                           type="text"
                           value={displayName}
                           onChange={(e) => setDisplayName(e.target.value)}
-                          className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                           placeholder="Your display name"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700">Bio</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
                         <textarea
                           value={bio}
                           onChange={(e) => setBio(e.target.value)}
-                          className="mt-1 w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary"
                           rows="3"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                           placeholder="Tell us about yourself"
                         />
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="block text-sm font-medium text-gray-700">Location</label>
-                          <div className="relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <FaMapMarkerAlt className="text-gray-400" />
-                            </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                          <div className="relative">
+                            <FaMapMarkerAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                             <input
                               type="text"
                               value={location}
                               onChange={(e) => setLocation(e.target.value)}
-                              className="w-full pl-10 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                               placeholder="Your location"
                             />
                           </div>
                         </div>
 
-                        <div className="space-y-1">
-                          <label className="block text-sm font-medium text-gray-700">Occupation</label>
-                          <div className="relative rounded-md shadow-sm">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                              <FaBriefcase className="text-gray-400" />
-                            </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Occupation</label>
+                          <div className="relative">
+                            <FaBriefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                             <input
                               type="text"
                               value={occupation}
                               onChange={(e) => setOccupation(e.target.value)}
-                              className="w-full pl-10 rounded-md border-gray-300 focus:border-primary focus:ring-primary"
+                              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
                               placeholder="Your occupation"
                             />
                           </div>
@@ -784,7 +738,7 @@ const Profile = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3">
+                    <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 mt-6">
                       <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -799,14 +753,14 @@ const Profile = () => {
                         whileTap={{ scale: 0.98 }}
                         type="submit"
                         disabled={loading}
-                        className="w-full sm:w-auto px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                        className="w-full sm:w-auto px-4 py-2 bg-primary text-white rounded-md shadow-sm text-sm font-medium hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                       >
                         {loading ? 'Saving...' : 'Save Changes'}
                       </motion.button>
                     </div>
                   </form>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-4 mt-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="flex items-center space-x-2 text-gray-600">
                         <FaMapMarkerAlt className="flex-shrink-0" />
@@ -819,7 +773,9 @@ const Profile = () => {
                     </div>
 
                     <div className="prose max-w-none">
-                      <p className="text-gray-600 break-words">{bio || 'Add a bio to tell people about yourself'}</p>
+                      <p className="text-gray-600 break-words text-sm sm:text-base">
+                        {bio || 'Add a bio to tell people about yourself'}
+                      </p>
                     </div>
 
                     {website && (
@@ -829,7 +785,7 @@ const Profile = () => {
                           href={website} 
                           target="_blank" 
                           rel="noopener noreferrer" 
-                          className="hover:underline truncate"
+                          className="hover:underline truncate text-sm sm:text-base"
                         >
                           {website}
                         </a>
@@ -841,17 +797,17 @@ const Profile = () => {
             </div>
 
             {/* Stats Section */}
-            <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
-                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{followersCount}</div>
+            <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-4">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl font-bold text-gray-900">{followersCount}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Followers</div>
               </div>
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
-                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{followingCount}</div>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl font-bold text-gray-900">{followingCount}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Following</div>
               </div>
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center">
-                <div className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{posts.length}</div>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 text-center">
+                <div className="text-lg sm:text-xl font-bold text-gray-900">{posts.length}</div>
                 <div className="text-xs sm:text-sm text-gray-500">Posts</div>
               </div>
             </div>
@@ -866,34 +822,18 @@ const Profile = () => {
                   <LoadingAnimation />
                 </div>
               ) : posts.length > 0 ? (
-                <InfiniteScroll
-                  dataLength={posts.length}
-                  next={loadMorePosts}
-                  hasMore={hasMore}
-                  loader={
-                    <div className="flex justify-center p-4">
-                      <LoadingAnimation />
-                    </div>
-                  }
-                  endMessage={
-                    <p className="text-center text-gray-500 py-4">
-                      No more posts to show
-                    </p>
-                  }
-                >
-                  <div className="space-y-4">
-                    {posts.map((post) => (
-                      <Post
-                        key={post.id}
-                        post={post}
-                        onLike={handleLike}
-                        onComment={handleComment}
-                        onDelete={isOwnProfile ? handleDeletePost : undefined}
-                        onEdit={isOwnProfile ? handleEditPost : undefined}
-                      />
-                    ))}
-                  </div>
-                </InfiniteScroll>
+                <div className="space-y-4">
+                  {posts.map((post) => (
+                    <Post
+                      key={post.id}
+                      post={post}
+                      onLike={handleLike}
+                      onComment={handleComment}
+                      onDelete={isOwnProfile ? handleDeletePost : undefined}
+                      onEdit={isOwnProfile ? handleEditPost : undefined}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="text-center text-gray-500 py-8">
                   {isOwnProfile ? "You haven't posted anything yet" : "No posts yet"}
@@ -903,31 +843,8 @@ const Profile = () => {
           </div>
         </div>
       </div>
-
-      {showSuccess && (
-
-        <motion.div
-
-          initial={{ opacity: 0, y: -50 }}
-
-          animate={{ opacity: 1, y: 0 }}
-
-          exit={{ opacity: 0, y: -50 }}
-
-          className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50"
-
-        >
-
-          Profile updated successfully!
-
-        </motion.div>
-
-      )}
-
     </div>
-
   );
-
 };
 
 
