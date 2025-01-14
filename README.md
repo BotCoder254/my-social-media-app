@@ -6,7 +6,7 @@
   <p align="center">
     A modern social media platform built with React and Firebase
     <br />
-    <a href="#demo">View Demo</a>
+    <a href="https://my-social-media-app-yozg.onrender.com">View Demo</a>
     ·
     <a href="#features">Features</a>
     ·
